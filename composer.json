@@ -1,0 +1,26 @@
+{
+  "name": "heller/simple-csv",
+  "description": "A package to make working with CSV files as convenient and simple as possible",
+  "autoload": {
+    "psr-4": {
+      "Heller\\SimpleCsv\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Lukas Heller",
+      "email": "dev@lukas-heller.de"
+    }
+  ],
+  "require-dev": {
+    "laravel/pint": "^1.13",
+    "pestphp/pest": "^2.19",
+    "spatie/ray": "^1.39",
+    "rector/rector": "^0.18.5"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}
