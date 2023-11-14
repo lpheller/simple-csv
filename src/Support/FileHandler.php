@@ -17,7 +17,7 @@ class FileHandler
      */
     public function openFile()
     {
-        return str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : fopen($this->filePath, 'r');
+        return str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : fopen($this->filePath, 'r+');
     }
 
     protected function handleFromUrl()

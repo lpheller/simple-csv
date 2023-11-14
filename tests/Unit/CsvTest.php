@@ -148,15 +148,11 @@ test('It returns the header row', function () {
 });
 
 test('It works with a csv from an url', function () {
-
-    // $file = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbCA0PYQtwEDF2g4rv3-22vUpoBaNaYWFNW3wR0s0a904D-9vRfmIkNzA7VmKDArfGY81whg9tWhWp/pub?gid=0&single=true&output=csv';
     $file = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbCA0PYQtwEDF2g4rv3-22vUpoBaNaYWFNW3wR0s0a904D-9vRfmIkNzA7VmKDArfGY81whg9tWhWp/pub?gid=103922319&single=true&output=csv';
 
-    // $file = __DIR__.'/../Fixtures/data_10krows.csv';
     $csv = Csv::read($file)->mapToHeaders();
 
     expect(count($csv->toArray()))->toBeGreaterThan(0);
-    // ray()->measure();
 
 });
 
@@ -378,4 +374,20 @@ test('it skips empty rows by default', function () {
     $csv->skipEmptyRows(false);
     expect($csv->count())->toBe(3);
 
+});
+
+test('it inserts a row at a certain position', function () {
+    $file = makeTestFile(2);
+
+    $csv = Csv::read($file)
+        ->mapToHeaders()
+        ->insertAt(1, ['Foo3', 'Bar3', 'Baz3']);
+
+    expect($csv->toArray()[0])->toBe([
+        'Foo' => 'Foo3',
+        'Bar' => 'Bar3',
+        'Baz' => 'Baz3',
+    ]);
+
+    unlink($file);
 });

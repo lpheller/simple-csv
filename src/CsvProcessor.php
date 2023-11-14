@@ -3,6 +3,7 @@
 namespace Heller\SimpleCsv;
 
 use Closure;
+use Generator;
 use Heller\SimpleCsv\Support\FileHandler;
 
 class CsvProcessor
@@ -31,7 +32,7 @@ class CsvProcessor
     {
     }
 
-    public function process()
+    public function process(): Generator
     {
         if (($handle = $this->fileHandler->openFile()) === false) {
             return;
@@ -65,10 +66,8 @@ class CsvProcessor
 
     /**
      * Precessing a single row of CSV data
-     *
-     * @return array|object
      */
-    public function prepareRow(array $row)
+    public function prepareRow(array $row): array|object
     {
         $row = $this->skipColumnsByIndex($row);
         $row = $this->skipColumnsByHeaderName($row);
@@ -102,6 +101,12 @@ class CsvProcessor
         return $this->createObjectInstance($row);
     }
 
+    /**
+     * Get the header row from the CSV file.
+     *
+     * If headers were set manually, return those.
+     * Otherwise read the header row from the CSV based on headerRow index.
+     */
     public function getHeaderRow()
     {
         if ($this->headers) {
@@ -205,5 +210,36 @@ class CsvProcessor
         }
 
         return $row;
+    }
+
+    /**
+     * Insert a row with data at the specified index in the CSV file.
+     *
+     * @param  int  $position The index to insert the row at
+     * @param  array  $rowData The data for the new row
+     */
+    public function insertAt($position = 0, $rowData = [])
+    {
+        // if rows are skipped, we need to add the number of skipped rows to the position
+        // this is mainly when the rows are mapped to the headers
+        if ($this->skipRows != []) {
+            $position = $position + count($this->skipRows);
+        }
+
+        $writer = new CsvWriter([]);
+        $writer->setFileHandler($this->fileHandler);
+        $writer->insertRow($position, $rowData);
+    }
+
+    /**
+     * Appending data to the end of the CSV file.
+     */
+    public function append($rowData = [])
+    {
+        $writer = new CsvWriter($rowData);
+        $writer->setFileHandler($this->fileHandler);
+        $writer->write(
+            append: true
+        );
     }
 }

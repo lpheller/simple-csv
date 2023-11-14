@@ -27,6 +27,14 @@ class Csv
     }
 
     /**
+     * Create a new instance of the CsvWriter class.
+     */
+    public static function make(array $data, $options = [])
+    {
+        return new CsvWriter($data, $options);
+    }
+
+    /**
      * Set the delimiter for the CSV file.
      *
      * @param  string  $delimiter The delimiter for the CSV file
@@ -226,5 +234,23 @@ class Csv
     public function toJson()
     {
         return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Insert a row with data at the specified index.
+     */
+    public function insertAt(int $index, array $row)
+    {
+
+        if ($this->processor->skipRows != []) {
+            $index = max($index + count($this->processor->skipRows), 2);
+            // dump($index + count($this->processor->skipRows));
+            // dd($index);
+        }
+        (new CsvWriter([]))
+            ->setFileHandler($this->processor->fileHandler)
+            ->insertRow($index, $row);
+
+        return $this;
     }
 }

@@ -16,7 +16,8 @@
     "laravel/pint": "^1.13",
     "pestphp/pest": "^2.19",
     "spatie/ray": "^1.39",
-    "rector/rector": "^0.18.5"
+    "rector/rector": "^0.18.5",
+    "mockery/mockery": "^1.6"
   },
   "config": {
     "allow-plugins": {
