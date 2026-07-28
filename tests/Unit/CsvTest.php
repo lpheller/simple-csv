@@ -1,6 +1,20 @@
 <?php
 
 use Heller\SimpleCsv\Csv;
+use Heller\SimpleCsv\CsvProcessor;
+use Heller\SimpleCsv\Support\FileHandler;
+
+class CountingFileHandler extends FileHandler
+{
+    public int $opens = 0;
+
+    public function openFile()
+    {
+        $this->opens++;
+
+        return parent::openFile();
+    }
+}
 
 test('It returns each data row as an array', function () {
 
@@ -282,19 +296,35 @@ test('it normalizes the header names when mapping to object', function () {
     ]);
 });
 
+test('it reads the header row once, not once per data row', function () {
+    $handler = new CountingFileHandler(__DIR__.'/../Fixtures/data_10krows.csv');
+
+    $processor = new CsvProcessor($handler);
+    $processor->shouldMapToHeaders = true;
+    $processor->skipRows = [1];
+
+    foreach ($processor->process() as $row) {
+    }
+
+    // once for the data stream, once for the header row
+    expect($handler->opens)->toBe(2);
+});
+
 test('it processes large files', function () {
     // works at least up to 10m rows
     $file = makeTestFile(100000);
 
-    $csv = Csv::read($file);
-
     $i = 0;
-
-    $csv->each(function ($row) use (&$i) {
+    Csv::read($file)->each(function ($row) use (&$i) {
         $i++;
     });
-
     expect($i)->toBe(100000);
+
+    $i = 0;
+    Csv::read($file)->mapToHeaders()->each(function ($row) use (&$i) {
+        $i++;
+    });
+    expect($i)->toBe(99999);
 
     unlink($file);
 });

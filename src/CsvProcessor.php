@@ -27,6 +27,8 @@ class CsvProcessor
 
     public array $headers = [];
 
+    private ?array $cachedHeaderRow = null;
+
     public function __construct(public FileHandler $fileHandler) {}
 
     public function process()
@@ -106,7 +108,7 @@ class CsvProcessor
             return $this->headers;
         }
 
-        return $this->getHeaderRowFromCsv();
+        return $this->cachedHeaderRow ??= $this->getHeaderRowFromCsv();
     }
 
     protected function getHeaderRowFromCsv()
