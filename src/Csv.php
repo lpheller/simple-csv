@@ -18,7 +18,7 @@ class Csv
     /**
      * Create a new instance of the Csv class.
      *
-     * @param  string  $filePath The path or url to the CSV file
+     * @param  string  $filePath  The path or url to the CSV file
      * @return $this
      */
     public static function read(string $filePath)
@@ -29,7 +29,7 @@ class Csv
     /**
      * Set the delimiter for the CSV file.
      *
-     * @param  string  $delimiter The delimiter for the CSV file
+     * @param  string  $delimiter  The delimiter for the CSV file
      * @return $this
      */
     public function delimiter(string $delimiter)
@@ -43,7 +43,7 @@ class Csv
      * Map the CSV data to header keys.
      * The header row will be used as the keys for the data rows.
      *
-     * @param  int|array  $headerRow The header row number or an array of header names
+     * @param  int|array  $headerRow  The header row number or an array of header names
      * @return $this
      */
     public function mapToHeaders(array|int|bool $headerRow = 1)
@@ -66,7 +66,7 @@ class Csv
      * Set the header row number.
      * This is only used when mapping the CSV data to header keys.
      *
-     * @param  int  $row The header row number
+     * @param  int  $row  The header row number
      * @return $this
      */
     public function setHeaderRow(int $row)
@@ -97,7 +97,7 @@ class Csv
     /**
      * Skip rows by index.
      *
-     * @param  int|array  $rows The row numbers to skip
+     * @param  int|array  $rows  The row numbers to skip
      * @return $this
      */
     public function skipRows(int|array $rows)
@@ -110,7 +110,7 @@ class Csv
     /**
      * Skip columns by index or header name.
      *
-     * @param  int|array  $columns The column numbers or header names to skip
+     * @param  int|array  $columns  The column numbers or header names to skip
      * @return $this
      */
     public function skipColumns(int|array $columns)
@@ -123,7 +123,7 @@ class Csv
     /**
      * Filter the rows with a callback function.
      *
-     * @param  Closure  $callback The callback function to filter the rows
+     * @param  Closure  $callback  The callback function to filter the rows
      * @return $this
      */
     public function filter(Closure $callback)
@@ -138,10 +138,10 @@ class Csv
      * object will be an instance of that class. Otherwise, it will be an
      * instance of stdClass.
      *
-     * @param  string|null  $customClass The custom class to map the data to
+     * @param  string|null  $customClass  The custom class to map the data to
      * @return $this
      */
-    public function mapToObject(string $customClass = null)
+    public function mapToObject(?string $customClass = null)
     {
         $this->mapToHeaders();
         $this->processor->mapToObject = true;
@@ -184,7 +184,7 @@ class Csv
      * used for huge files. Use the process() method instead to process the
      * CSV line by line.
      *
-     *  @return array
+     * @return array
      */
     public function toArray()
     {
@@ -199,7 +199,7 @@ class Csv
     /**
      * Process the CSV data line by line.
      *
-     * @param  callable  $callback The callback function to process each row
+     * @param  callable  $callback  The callback function to process each row
      */
     public function each($callback)
     {

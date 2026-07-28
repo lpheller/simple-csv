@@ -148,28 +148,24 @@ test('It returns the header row', function () {
 });
 
 test('It works with a csv from an url', function () {
+    $csv = fakeHttp("Foo,Bar,Baz\nFoo1,Bar1,Baz1\n", fn () => Csv::read('https://example.test/data.csv')->mapToHeaders()->toArray());
 
-    // $file = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbCA0PYQtwEDF2g4rv3-22vUpoBaNaYWFNW3wR0s0a904D-9vRfmIkNzA7VmKDArfGY81whg9tWhWp/pub?gid=0&single=true&output=csv';
-    $file = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbCA0PYQtwEDF2g4rv3-22vUpoBaNaYWFNW3wR0s0a904D-9vRfmIkNzA7VmKDArfGY81whg9tWhWp/pub?gid=103922319&single=true&output=csv';
-
-    // $file = __DIR__.'/../Fixtures/data_10krows.csv';
-    $csv = Csv::read($file)->mapToHeaders();
-
-    expect(count($csv->toArray()))->toBeGreaterThan(0);
-    // ray()->measure();
-
+    expect($csv)->toBe([
+        [
+            'Foo' => 'Foo1',
+            'Bar' => 'Bar1',
+            'Baz' => 'Baz1',
+        ],
+    ]);
 });
 
-test('It works with a plain google spreadhset url', function () {
-    $url = 'https://docs.google.com/spreadsheets/d/1F4yuxvNYcBD_91MFQdgWqxXPQL1HC3PP_JOnN1Mizr0';
+test('It rewrites a plain google spreadsheet url to the csv export url', function () {
+    $csv = fakeHttp("Foo,Bar,Baz\n", fn () => Csv::read('https://docs.google.com/spreadsheets/d/1F4yuxvNYcBD/edit#gid=0')->toArray());
 
-    $csv = Csv::read($url)->toArray();
+    expect(FakeHttpStream::$requestedUrl)
+        ->toBe('https://docs.google.com/spreadsheets/d/1F4yuxvNYcBD/pub?output=csv&gid=0');
 
-    expect($csv[0])->toEqual(
-        [
-            'Foo', 'Bar', 'Baz',
-        ],
-    );
+    expect($csv[0])->toBe(['Foo', 'Bar', 'Baz']);
 });
 
 test('it filters the data', function () {
@@ -314,7 +310,7 @@ function makeTestFile($rows = 1000)
         'Bar' => 'Bar',
         'Baz' => 'Baz',
     ];
-    fputcsv($fp, $row);
+    fputcsv($fp, $row, escape: '\\');
 
     for ($i = 0; $i < ($rows - 1); $i++) {
         $row = [
@@ -322,7 +318,7 @@ function makeTestFile($rows = 1000)
             'Bar' => 'Bar'.$i,
             'Baz' => 'Baz'.$i,
         ];
-        fputcsv($fp, $row);
+        fputcsv($fp, $row, escape: '\\');
     }
     fclose($fp);
 

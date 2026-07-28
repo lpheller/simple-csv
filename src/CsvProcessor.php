@@ -27,9 +27,7 @@ class CsvProcessor
 
     public array $headers = [];
 
-    public function __construct(public FileHandler $fileHandler)
-    {
-    }
+    public function __construct(public FileHandler $fileHandler) {}
 
     public function process()
     {
@@ -39,7 +37,7 @@ class CsvProcessor
 
         $rowNumber = 0;
 
-        while (($row = fgetcsv($handle, null, $this->delimiter)) !== false) {
+        while (($row = fgetcsv($handle, null, $this->delimiter, escape: '\\')) !== false) {
             $rowNumber++;
 
             if (in_array($rowNumber, $this->skipRows)) {
@@ -52,7 +50,7 @@ class CsvProcessor
 
             $row = $this->prepareRow($row);
 
-            if ($this->filterCallback instanceof \Closure && ! call_user_func($this->filterCallback, $row)) {
+            if ($this->filterCallback instanceof Closure && ! call_user_func($this->filterCallback, $row)) {
                 continue; // Skip rows that don't match the filter criteria
             }
 
@@ -117,7 +115,7 @@ class CsvProcessor
 
         // Skip rows until the header row
         for ($i = 1; $i < $this->headerRow; $i++) {
-            if (fgetcsv($handle) === false) {
+            if (fgetcsv($handle, escape: '\\') === false) {
                 throw new \RuntimeException('Header row not found in CSV.');
             }
         }
@@ -125,7 +123,8 @@ class CsvProcessor
         $header = fgetcsv(
             $handle,
             null,
-            $this->delimiter
+            $this->delimiter,
+            escape: '\\'
         );
         fclose($handle);
 
@@ -139,7 +138,7 @@ class CsvProcessor
             return (object) $row;
         }
 
-        $object = new $this->customObjectClass();
+        $object = new $this->customObjectClass;
 
         foreach ($row as $key => $value) {
             if (property_exists($object, $key)) {

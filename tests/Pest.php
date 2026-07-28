@@ -39,7 +39,63 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+class FakeHttpStream
 {
-    // ..
+    public static string $body = '';
+
+    public static ?string $requestedUrl = null;
+
+    public $context;
+
+    private int $position = 0;
+
+    public function stream_open(string $path): bool
+    {
+        self::$requestedUrl = $path;
+        $this->position = 0;
+
+        return true;
+    }
+
+    public function stream_read(int $count): string
+    {
+        $chunk = substr(self::$body, $this->position, $count);
+        $this->position += strlen($chunk);
+
+        return $chunk;
+    }
+
+    public function stream_eof(): bool
+    {
+        return $this->position >= strlen(self::$body);
+    }
+
+    public function stream_stat(): array
+    {
+        return ['size' => strlen(self::$body)];
+    }
+
+    public function stream_close(): void {}
+}
+
+/**
+ * Run $callback with http/https served from $body instead of the network.
+ */
+function fakeHttp(string $body, Closure $callback)
+{
+    FakeHttpStream::$body = $body;
+    FakeHttpStream::$requestedUrl = null;
+
+    foreach (['http', 'https'] as $scheme) {
+        stream_wrapper_unregister($scheme);
+        stream_wrapper_register($scheme, FakeHttpStream::class);
+    }
+
+    try {
+        return $callback();
+    } finally {
+        foreach (['http', 'https'] as $scheme) {
+            stream_wrapper_restore($scheme);
+        }
+    }
 }

@@ -6,9 +6,7 @@ class FileHandler
 {
     protected $cachedContent;
 
-    public function __construct(protected string $filePath)
-    {
-    }
+    public function __construct(protected string $filePath) {}
 
     /**
      * Open the file and return a stream resource
@@ -37,7 +35,6 @@ class FileHandler
     {
         $this->checkForGoogleDriveUrl();
 
-        // ray('hit n times');
         $content = file_get_contents($this->filePath);
         if ($content === false) {
             throw new \RuntimeException("Failed to fetch CSV from URL: {$this->filePath}");
