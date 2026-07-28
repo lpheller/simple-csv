@@ -35,9 +35,7 @@ class CsvProcessor
 
     public function process()
     {
-        if (($handle = $this->fileHandler->openFile()) === false) {
-            return;
-        }
+        $handle = $this->fileHandler->openFile();
 
         $rowNumber = 0;
 
@@ -46,6 +44,10 @@ class CsvProcessor
 
             if (in_array($rowNumber, $this->skipRows)) {
                 continue; // Skip rows based on specified row numbers
+            }
+
+            if ($this->isHeaderRow($rowNumber)) {
+                continue; // The header row is not data
             }
 
             if ($this->skipEmptyRows && empty(array_filter($row))) {
@@ -96,6 +98,17 @@ class CsvProcessor
 
         // Create an object instance based on user preference (stdClass or custom class)
         return $this->createObjectInstance($row);
+    }
+
+    /**
+     * Only rows read from the CSV are skipped. Headers passed in via
+     * setHeaders() do not occupy a row.
+     */
+    protected function isHeaderRow(int $rowNumber): bool
+    {
+        return $this->shouldMapToHeaders
+            && $this->headers === []
+            && $rowNumber === $this->headerRow;
     }
 
     public function getHeaderRow()
@@ -217,12 +230,24 @@ class CsvProcessor
         return array_values($row); // Re-index the row array
     }
 
+    /**
+     * Ragged rows keep the header keys: missing columns become null, surplus
+     * values keep their column index. Returning the raw positional row here
+     * would hand back two different shapes from the same file.
+     */
     public function combineWithHeader($header, $row)
     {
-        if (count($row) === count($header)) {
+        $columns = count($header);
+
+        if (count($row) === $columns) {
             return array_combine($header, $row);
         }
 
-        return $row;
+        $combined = array_combine(
+            $header,
+            array_pad(array_slice($row, 0, $columns), $columns, null)
+        );
+
+        return $combined + array_slice($row, $columns, null, true);
     }
 }

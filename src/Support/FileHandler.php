@@ -15,13 +15,21 @@ class FileHandler
      */
     public function openFile()
     {
-        $handle = str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : fopen($this->filePath, 'r');
-
-        if ($handle === false) {
-            return false;
-        }
+        $handle = str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : $this->handleFromPath();
 
         return $this->skipBom($handle);
+    }
+
+    /**
+     * @return resource
+     */
+    protected function handleFromPath()
+    {
+        if (! is_file($this->filePath) || ! is_readable($this->filePath)) {
+            throw new \RuntimeException("Failed to open CSV file: {$this->filePath}");
+        }
+
+        return fopen($this->filePath, 'r');
     }
 
     /**

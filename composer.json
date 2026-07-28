@@ -21,6 +21,11 @@
       "Heller\\SimpleCsv\\": "src/"
     }
   },
+  "scripts": {
+    "test": "pest",
+    "lint": "pint",
+    "bench": "@php bench.php"
+  },
   "config": {
     "allow-plugins": {
       "pestphp/pest-plugin": true

@@ -179,6 +179,42 @@ test('It strips a utf-8 BOM from the first header name', function () {
     ]);
 });
 
+test('It throws when the file cannot be opened', function () {
+
+    expect(fn () => Csv::read('/does/not/exist.csv')->count())
+        ->toThrow(RuntimeException::class, 'Failed to open CSV file: /does/not/exist.csv');
+});
+
+test('It keeps the header keys on ragged rows', function () {
+
+    $file = __DIR__.'/../Fixtures/data_ragged.csv';
+
+    $csv = Csv::read($file)->mapToHeaders();
+
+    expect($csv->toArray())->toBe([
+        // short row: missing column is null, not a positional array
+        ['id' => '1', 'name' => 'Ada', 'mail' => null],
+        ['id' => '2', 'name' => 'Bob', 'mail' => 'b@x.de'],
+        // surplus value keeps its column index instead of being dropped
+        ['id' => '3', 'name' => 'Cid', 'mail' => 'c@x.de', 3 => 'extra'],
+    ]);
+});
+
+test('mapToHeaders does not overwrite skipRows', function () {
+
+    $file = __DIR__.'/../Fixtures/data_headers.csv';
+
+    $csv = Csv::read($file)
+        ->skipRows([1])
+        ->mapToHeaders(2);
+
+    // row 1 skipped by the user, row 2 skipped because it is the header
+    expect($csv->toArray())->toBe([
+        ['Foo' => 'Bla1', 'Bar' => 'Bla1', 'Baz' => 'Bla1'],
+        ['Foo' => 'Foo1', 'Bar' => 'Bar1', 'Baz' => 'Baz1'],
+    ]);
+});
+
 test('It returns the header row', function () {
 
     $file = __DIR__.'/../Fixtures/data.csv';

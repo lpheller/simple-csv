@@ -54,12 +54,7 @@ class Csv
             return $this->setHeaders($headerRow);
         }
 
-        $this->setHeaderRow($headerRow);
-
-        // Skip the header row when processing the CSV
-        $this->skipRows([$headerRow]);
-
-        return $this;
+        return $this->setHeaderRow($headerRow);
     }
 
     /**
@@ -78,7 +73,6 @@ class Csv
 
     public function setHeaders(array $headers)
     {
-        $this->skipRows([]);
         $this->processor->headers = $headers;
 
         return $this;
