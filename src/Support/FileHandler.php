@@ -24,7 +24,7 @@ class FileHandler
             $this->cachedContent = $this->fetchFromUrl();
         }
 
-        $handle = fopen('php://memory', 'r+');
+        $handle = fopen('php://temp', 'r+');
         fwrite($handle, (string) $this->cachedContent);
         rewind($handle);
 

@@ -16,6 +16,18 @@ class CountingFileHandler extends FileHandler
     }
 }
 
+class CountingCsvProcessor extends CsvProcessor
+{
+    public int $normalizations = 0;
+
+    public function normalizeHeaders($headers)
+    {
+        $this->normalizations++;
+
+        return parent::normalizeHeaders($headers);
+    }
+}
+
 test('It returns each data row as an array', function () {
 
     $file = __DIR__.'/../Fixtures/data.csv';
@@ -308,6 +320,18 @@ test('it reads the header row once, not once per data row', function () {
 
     // once for the data stream, once for the header row
     expect($handler->opens)->toBe(2);
+});
+
+test('it normalizes the header row once, not once per data row', function () {
+    $processor = new CountingCsvProcessor(new FileHandler(__DIR__.'/../Fixtures/data_10krows.csv'));
+    $processor->shouldMapToHeaders = true;
+    $processor->mapToObject = true;
+    $processor->skipRows = [1];
+
+    foreach ($processor->process() as $row) {
+    }
+
+    expect($processor->normalizations)->toBe(1);
 });
 
 test('it processes large files', function () {

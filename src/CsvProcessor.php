@@ -29,6 +29,8 @@ class CsvProcessor
 
     private ?array $cachedHeaderRow = null;
 
+    private ?array $preparedHeaderRow = null;
+
     public function __construct(public FileHandler $fileHandler) {}
 
     public function process()
@@ -77,17 +79,11 @@ class CsvProcessor
             return $row;
         }
 
-        // Read CSV file and handle header row
-        $header = $this->getHeaderRow();
-
-        $header = $this->skipColumnsByIndex($header);
-        $header = $this->skipColumnsByHeaderName($header);
+        $header = $this->preparedHeaderRow();
 
         if (! $header) {
             return $row;
         }
-
-        $header = $this->mapToObject ? $this->normalizeHeaders($header) : $header;
 
         $row = $this->combineWithHeader(
             $header,
@@ -109,6 +105,28 @@ class CsvProcessor
         }
 
         return $this->cachedHeaderRow ??= $this->getHeaderRowFromCsv();
+    }
+
+    /**
+     * The header row with skipped columns removed and, when mapping to
+     * objects, normalized names. Identical for every data row.
+     */
+    protected function preparedHeaderRow(): array
+    {
+        if ($this->preparedHeaderRow !== null) {
+            return $this->preparedHeaderRow;
+        }
+
+        $header = $this->getHeaderRow();
+
+        if (! $header) {
+            return $this->preparedHeaderRow = [];
+        }
+
+        $header = $this->skipColumnsByIndex($header);
+        $header = $this->skipColumnsByHeaderName($header);
+
+        return $this->preparedHeaderRow = $this->mapToObject ? $this->normalizeHeaders($header) : $header;
     }
 
     protected function getHeaderRowFromCsv()
