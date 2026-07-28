@@ -162,6 +162,23 @@ test('It skips columns by column name and index', function () {
     ]);
 });
 
+test('It strips a utf-8 BOM from the first header name', function () {
+
+    $file = __DIR__.'/../Fixtures/data_with_bom.csv';
+
+    $csv = Csv::read($file)->mapToHeaders();
+
+    expect($csv->getHeaderRow())->toBe(['Foo', 'Bar', 'Baz']);
+
+    expect($csv->toArray())->toBe([
+        [
+            'Foo' => 'Foo1',
+            'Bar' => 'Bar1',
+            'Baz' => 'Baz1',
+        ],
+    ]);
+});
+
 test('It returns the header row', function () {
 
     $file = __DIR__.'/../Fixtures/data.csv';

@@ -15,7 +15,29 @@ class FileHandler
      */
     public function openFile()
     {
-        return str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : fopen($this->filePath, 'r');
+        $handle = str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : fopen($this->filePath, 'r');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        return $this->skipBom($handle);
+    }
+
+    /**
+     * Leave the stream positioned after a UTF-8 BOM, so it never ends up in
+     * the first header name. Excel and Google Sheets both write one.
+     *
+     * @param  resource  $handle
+     * @return resource
+     */
+    protected function skipBom($handle)
+    {
+        if (fread($handle, 3) !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+
+        return $handle;
     }
 
     protected function handleFromUrl()
