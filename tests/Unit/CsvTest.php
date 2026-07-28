@@ -470,7 +470,7 @@ test('It maps to custom headers', function () {
     unlink($file);
 });
 
-test('it skips empty rows by default', function () {
+test('it can skip empty rows', function () {
     $file = __DIR__.'/../Fixtures/data_with_empty_rows.csv';
     $csv = Csv::read($file)
         ->mapToHeaders()

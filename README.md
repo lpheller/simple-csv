@@ -2,104 +2,190 @@
 
 Make dealing with CSV data as easy and comfortable as possible.
 
+Reads local files, URLs and Google Spreadsheets through one fluent API. Every
+read is generator based, so a file of any size costs the same memory as a single
+row — unless you explicitly ask for the whole thing with `toArray()`.
+
+## Requirements
+
+PHP 8.3 or higher.
+
 ## Installation
 
 ```sh
 composer require heller/simple-csv
 ```
 
-## Usage
-
-### Basic array
+## Reading
 
 ```php
 use Heller\SimpleCsv\Csv;
 
-$csv = Csv::read('filepath.csv')->toArray();
+Csv::read('data.csv')->toArray();
+Csv::read('https://example.com/data.csv')->toArray();
 
-$csv = Csv::read('http://urlto.csv')->toArray();
+// Spreadsheet URLs are rewritten to their CSV export automatically
+Csv::read('https://docs.google.com/spreadsheets/d/ABC123/edit')->toArray();
 ```
 
-### Header mapping
+An unreadable path throws a `RuntimeException` rather than returning an empty
+result, so a typo in a filename cannot look like an empty import.
 
-Assuming that you have a csv table where the first row holds the cullum names
-using the `mapToHeader` function makes handling the data much easier.
+### Delimiter
 
 ```php
-use Heller\SimpleCsv\Csv;
+Csv::read('data.csv')->delimiter(';')->toArray();
+```
 
-$csv = Csv::read('filepath.csv')
-            ->mapToHeaders()
-            ->toArray();
+## Header mapping
 
-foreach($csv as $row){
-    echo $row['columnname']; // instead of using $row[3]
+`mapToHeaders()` uses a row of the CSV as the keys for every data row. The
+header row itself is never returned as data.
+
+```php
+$rows = Csv::read('data.csv')->mapToHeaders()->toArray();
+
+foreach ($rows as $row) {
+    echo $row['columnname']; // instead of $row[3]
 }
 ```
 
-### Skipping rows & columns
-
-Sometimes it can be helpful to skip certain rows or columns.
-You can do that using `skipRows` and `skipColumns` methods.
+Pass a row number if the header is not the first row:
 
 ```php
-$csv = Csv::read('filepath.csv')
-           ->skipRows(1)
-           ->skipColumns([2, 4, 'columnname'])
-           ->toArray();
+Csv::read('data.csv')->mapToHeaders(3)->toArray();
 ```
 
-Both methods accept either an `int` for a certain row / column or `array` to skip
-multiple rows or columns.
-The `skipColumns` method also accepts column (header) names as input.
-
-### Filtering
-
-As the csv data is just array, we can of course filter the data however you like.
-For convenience we can also filter while collecting the data using the filter() callback.
+Pass an array to supply your own header names. No row is consumed, so every
+line in the file is treated as data:
 
 ```php
-$csv = Csv::read('filepath.csv')
-           ->filter(fn($row) => $row['column'] != 'foo')
-           ->toArray();
+Csv::read('data.csv')->mapToHeaders(['id', 'name', 'email'])->toArray();
 ```
 
-### Map to object
-
-Mapping rows to objects allows you to work with CSV data in a more structured way.
-By default the rows are mapped to `stdClass` which allows to access the CSV data using object properties.
-
-However, if you specify a custom class each row will be mapped to the class based on the header column names.
+Read the header without reading the file:
 
 ```php
-// ...
+Csv::read('data.csv')->getHeaderRow(); // ['Foo', 'Bar', 'Baz']
+```
 
-$csv->mapToObject(); // Maps rows to stdClass
+`getHeaderRow()` returns the header as it appears in the file — `skipColumns()`
+is not applied to it.
 
-$csv->mapToObject(CsvRow::class)
-    ->filter(function(CsvRow $item){
-        return $item->isValid();
-    })
+### Ragged rows
+
+Rows with a different column count than the header keep their header keys.
+Missing values become `null`, surplus values keep their column index:
+
+```php
+// id,name,mail
+// 1,Ada
+// 2,Bob,b@x.de,extra
+
+['id' => '1', 'name' => 'Ada', 'mail' => null]
+['id' => '2', 'name' => 'Bob', 'mail' => 'b@x.de', 3 => 'extra']
+```
+
+A UTF-8 BOM — written by Excel and Google Sheets — is stripped, so the first
+header name is usable as a key.
+
+## Mapping to objects
+
+By default each row becomes a `stdClass`, so you can use property access:
+
+```php
+Csv::read('data.csv')->mapToObject()->toArray();
+```
+
+Pass a class name to map onto your own type. Values are assigned to properties
+whose names match the column, other columns are ignored:
+
+```php
+Csv::read('data.csv')
+    ->mapToObject(CsvRow::class)
+    ->filter(fn (CsvRow $row) => $row->isValid())
     ->toArray();
-
 ```
 
-When using the mapToObject method, the column headers slightly adjusted so
-the object properties are ensured to have valid names.
-If a column header was named "Starts At", the name will be normalized to "starts_at"
-so it can be accessed with `$row->starts_at`.
-For custom class mapping the (normalized) column header has to match the class property name.
+Column names are normalized to valid property names when mapping to objects: a
+column `Starts At (UTC)` becomes `$row->starts_at_utc`. Note the difference to
+`mapToHeaders()`, which keeps the original names as array keys.
 
-### Individually process row
+`mapToObject()` implies `mapToHeaders()`, you do not need to call both.
 
-The `get` method will allways return an of rows from the csv file. Either as arrays or object.
-However, while being handy for smaller tasks, this is not memory efficient and can cause problems with large csv files.
-To solve this, you can process each row individually and still let the package solve the mapping, filtering and skipping etc.
-This even makes handling large files with millions of records as simple as possible.
+## Skipping
+
+Rows and columns are numbered from 1. Both methods take a single value or an
+array, and `skipColumns()` also accepts column names.
 
 ```php
-$csv->mapToObject(CsvRow::class)
-    ->each(function(CsvRow $item) {
-        // ... import the data or handle the data however you like
+Csv::read('data.csv')
+    ->skipRows(1)
+    ->skipColumns([2, 4, 'columnname'])
+    ->toArray();
+```
+
+`skipRows()` is independent of `mapToHeaders()` — the header row is skipped in
+addition to whatever you list, in any call order.
+
+Rows where every column is empty are returned by default. Drop them with:
+
+```php
+Csv::read('data.csv')->skipEmptyRows()->toArray();
+```
+
+## Filtering
+
+The callback receives the row after mapping, so it gets an array or an object
+depending on what you configured. Filtering happens while reading, which keeps
+it cheap on large files.
+
+```php
+Csv::read('data.csv')
+    ->mapToHeaders()
+    ->filter(fn ($row) => $row['column'] !== 'foo')
+    ->toArray();
+```
+
+## Getting the data out
+
+```php
+$csv = Csv::read('data.csv')->mapToHeaders();
+
+$csv->toArray(); // array of all rows
+$csv->toJson();  // JSON string of all rows
+$csv->first();   // first row, or null if there is none
+$csv->count();   // number of rows, with filter and skips applied
+```
+
+`toArray()` and `toJson()` hold the entire file in memory. For anything large,
+process row by row instead — this is memory constant and works on files with
+millions of records:
+
+```php
+Csv::read('data.csv')
+    ->mapToObject(CsvRow::class)
+    ->each(function (CsvRow $row) {
+        // import or handle the row however you like
     });
 ```
+
+## Known limitations
+
+- Backslash still acts as an escape character inside quoted fields, matching
+  PHP's current `fgetcsv` default. A field ending in `\` can swallow its
+  closing quote.
+- Reading only. There is no CSV writer.
+- No encoding conversion. Input is expected to be UTF-8.
+
+## Development
+
+```sh
+composer test   # pest
+composer lint   # pint
+composer bench  # 1M row benchmark, generates its own fixture
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
