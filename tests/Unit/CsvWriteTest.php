@@ -120,6 +120,42 @@ test('It writes with a custom delimiter', function () {
     expect(file_get_contents($this->file))->toBe("Col1;Col2\nFoo;Bar\n");
 });
 
+test('It writes CRLF line endings for Excel', function () {
+
+    Csv::make([['Foo', 'Bar']])
+        ->withHeaders(['Col1', 'Col2'])
+        ->crlf()
+        ->toFile($this->file)
+        ->write();
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\r\nFoo,Bar\r\n");
+});
+
+test('It keeps the line ending when appending', function () {
+
+    Csv::make([['Foo', 'Bar']])
+        ->withHeaders(['Col1', 'Col2'])
+        ->crlf()
+        ->toFile($this->file)
+        ->write();
+
+    Csv::make([['Foo1', 'Bar1']])
+        ->crlf()
+        ->toFile($this->file)
+        ->append();
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\r\nFoo,Bar\r\nFoo1,Bar1\r\n");
+});
+
+test('It still reads back what it wrote with CRLF', function () {
+
+    $rows = [['name' => 'Ada', 'city' => 'Berlin']];
+
+    Csv::make($rows)->withHeaders(['name', 'city'])->crlf()->toFile($this->file)->write();
+
+    expect(Csv::read($this->file)->mapToHeaders()->toArray())->toBe($rows);
+});
+
 test('It throws when no target file was set', function () {
 
     expect(fn () => Csv::make([['Foo']])->write())

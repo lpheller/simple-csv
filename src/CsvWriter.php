@@ -10,6 +10,8 @@ class CsvWriter
 
     protected string $delimiter = ',';
 
+    protected string $lineEnding = "\n";
+
     public function __construct(protected array $data) {}
 
     /**
@@ -36,6 +38,16 @@ class CsvWriter
     public function delimiter(string $delimiter): static
     {
         $this->delimiter = $delimiter;
+
+        return $this;
+    }
+
+    /**
+     * End rows with CRLF instead of LF, which is what Excel on Windows expects.
+     */
+    public function crlf(): static
+    {
+        $this->lineEnding = "\r\n";
 
         return $this;
     }
@@ -83,11 +95,11 @@ class CsvWriter
     protected function putRows($handle, array $headerRow, array $columnOrder): void
     {
         if ($headerRow !== []) {
-            fputcsv($handle, $headerRow, $this->delimiter, escape: '\\');
+            fputcsv($handle, $headerRow, $this->delimiter, escape: '\\', eol: $this->lineEnding);
         }
 
         foreach ($this->data as $row) {
-            fputcsv($handle, $this->alignRow((array) $row, $columnOrder), $this->delimiter, escape: '\\');
+            fputcsv($handle, $this->alignRow((array) $row, $columnOrder), $this->delimiter, escape: '\\', eol: $this->lineEnding);
         }
     }
 
