@@ -88,6 +88,68 @@ class CsvWriter
     }
 
     /**
+     * Insert the data before the record at $position, counting from 1. The
+     * header occupies record 1, so the first data row is position 2. Records
+     * after the insert are copied byte for byte and keep their formatting.
+     *
+     * A position past the end of the file appends.
+     */
+    public function insertAt(int $position): static
+    {
+        if ($position < 1) {
+            throw new \RuntimeException('Position must be 1 or higher.');
+        }
+
+        $existingHeaders = $this->headerRowInFile();
+
+        if ($existingHeaders === null) {
+            return $this->write();
+        }
+
+        $this->assertTargetIsWritable();
+
+        $source = fopen($this->filePath, 'r');
+        $offset = $this->offsetOfRecord($source, $position);
+
+        $temporaryPath = tempnam(dirname($this->filePath), 'simple-csv');
+        $target = fopen($temporaryPath, 'w');
+
+        rewind($source);
+        stream_copy_to_stream($source, $target, $offset);
+        $this->putRows($target, [], $this->headers ?: $existingHeaders);
+        stream_copy_to_stream($source, $target);
+
+        fclose($source);
+        fclose($target);
+
+        chmod($temporaryPath, fileperms($this->filePath) & 0777);
+        rename($temporaryPath, $this->filePath);
+
+        return $this;
+    }
+
+    /**
+     * Byte offset at which the record at $position starts. Records are counted
+     * with fgetcsv, so a newline inside a quoted field does not shift the count.
+     *
+     * @param  resource  $source
+     */
+    protected function offsetOfRecord($source, int $position): int
+    {
+        $offset = 0;
+
+        for ($record = 1; $record < $position; $record++) {
+            if (fgetcsv($source, null, $this->delimiter, escape: '\\') === false) {
+                break;
+            }
+
+            $offset = ftell($source);
+        }
+
+        return $offset;
+    }
+
+    /**
      * @param  resource  $handle
      * @param  array  $headerRow  Written as the first row. Empty writes no header.
      * @param  array  $columnOrder  Column order for associative rows.
@@ -140,6 +202,13 @@ class CsvWriter
      */
     protected function openTarget(string $mode)
     {
+        $this->assertTargetIsWritable();
+
+        return fopen($this->filePath, $mode);
+    }
+
+    protected function assertTargetIsWritable(): void
+    {
         $this->assertTargetIsSet();
 
         $directory = dirname($this->filePath);
@@ -151,8 +220,6 @@ class CsvWriter
         if (is_file($this->filePath) && ! is_writable($this->filePath)) {
             throw new \RuntimeException("Cannot write to file: {$this->filePath}");
         }
-
-        return fopen($this->filePath, $mode);
     }
 
     protected function assertTargetIsSet(): void

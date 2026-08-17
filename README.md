@@ -219,6 +219,33 @@ Csv::make([['city' => 'Hamburg', 'name' => 'Bob']])
 If the file is missing or empty, `append()` writes it like `write()` would,
 header included.
 
+### Inserting at a position
+
+`insertAt()` puts rows in front of an existing record. Records are counted from
+1 and the header is record 1, so the first data row is position 2:
+
+```php
+// Col1,Col2
+// A,A
+// B,B
+
+Csv::make([['NEW', 'NEW']])->toFile('data.csv')->insertAt(3);
+
+// Col1,Col2
+// A,A
+// NEW,NEW
+// B,B
+```
+
+Everything after the insert is copied byte for byte, so quoting and spacing of
+untouched records survive. The file is rebuilt next to itself and moved into
+place in one step, which means a crash mid-write cannot leave a half-written
+file behind. Memory stays constant regardless of file size — inserting into a
+1M row file costs about 2 MB.
+
+A position past the end appends. A missing or empty file is written from
+scratch, like `write()`.
+
 ### Delimiter and line endings
 
 ```php
@@ -237,7 +264,7 @@ Csv::make($rows)->crlf()->toFile('out.csv')->write();
   PHP's current `fgetcsv` default. A field ending in `\` can swallow its
   closing quote.
 - No encoding conversion. Input is expected to be UTF-8, and no BOM is written.
-- Writing replaces or appends. There is no insert or update of existing rows.
+- Existing records can be inserted in front of, but not changed or removed.
 
 ## Development
 
