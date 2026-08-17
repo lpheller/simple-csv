@@ -219,10 +219,16 @@ Csv::make([['city' => 'Hamburg', 'name' => 'Bob']])
 If the file is missing or empty, `append()` writes it like `write()` would,
 header included.
 
-### Delimiter
+### Delimiter and line endings
 
 ```php
 Csv::make($rows)->delimiter(';')->toFile('out.csv')->write();
+```
+
+Rows end with `\n`. Excel on Windows expects `\r\n`:
+
+```php
+Csv::make($rows)->crlf()->toFile('out.csv')->write();
 ```
 
 ## Known limitations
