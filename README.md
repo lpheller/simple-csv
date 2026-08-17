@@ -37,6 +37,16 @@ result, so a typo in a filename cannot look like an empty import.
 Csv::read('data.csv')->delimiter(';')->toArray();
 ```
 
+### Escaping
+
+Fields are parsed the RFC 4180 way: a quote inside a quoted field is doubled,
+and a backslash is just a character. Some producers, notably MySQL's
+`SELECT ... INTO OUTFILE`, escape with a backslash instead:
+
+```php
+Csv::read('dump.csv')->escape('\\')->toArray();
+```
+
 ### Encoding
 
 Files that are not UTF-8 are converted while reading. Anything `iconv` knows
@@ -277,9 +287,6 @@ that already has content alone.
 
 ## Known limitations
 
-- Backslash still acts as an escape character inside quoted fields, matching
-  PHP's current `fgetcsv` default. A field ending in `\` can swallow its
-  closing quote.
 - Output is always UTF-8. Only reading converts between encodings.
 - Existing records can be inserted in front of, but not changed or removed.
 

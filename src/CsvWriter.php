@@ -10,6 +10,8 @@ class CsvWriter
 
     protected string $delimiter = ',';
 
+    protected string $escape = '';
+
     protected string $lineEnding = "\n";
 
     protected bool $bom = false;
@@ -40,6 +42,17 @@ class CsvWriter
     public function delimiter(string $delimiter): static
     {
         $this->delimiter = $delimiter;
+
+        return $this;
+    }
+
+    /**
+     * Treat this character as an escape character. Off by default, which is
+     * RFC 4180.
+     */
+    public function escape(string $escape): static
+    {
+        $this->escape = $escape;
 
         return $this;
     }
@@ -158,7 +171,7 @@ class CsvWriter
         $offset = 0;
 
         for ($record = 1; $record < $position; $record++) {
-            if (fgetcsv($source, null, $this->delimiter, escape: '\\') === false) {
+            if (fgetcsv($source, null, $this->delimiter, escape: $this->escape) === false) {
                 break;
             }
 
@@ -176,11 +189,11 @@ class CsvWriter
     protected function putRows($handle, array $headerRow, array $columnOrder): void
     {
         if ($headerRow !== []) {
-            fputcsv($handle, $headerRow, $this->delimiter, escape: '\\', eol: $this->lineEnding);
+            fputcsv($handle, $headerRow, $this->delimiter, escape: $this->escape, eol: $this->lineEnding);
         }
 
         foreach ($this->data as $row) {
-            fputcsv($handle, $this->alignRow((array) $row, $columnOrder), $this->delimiter, escape: '\\', eol: $this->lineEnding);
+            fputcsv($handle, $this->alignRow((array) $row, $columnOrder), $this->delimiter, escape: $this->escape, eol: $this->lineEnding);
         }
     }
 
@@ -210,7 +223,7 @@ class CsvWriter
         }
 
         $handle = fopen($this->filePath, 'r');
-        $header = fgetcsv($handle, null, $this->delimiter, escape: '\\');
+        $header = fgetcsv($handle, null, $this->delimiter, escape: $this->escape);
         fclose($handle);
 
         return $header === false ? null : $header;
