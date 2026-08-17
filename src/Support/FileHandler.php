@@ -6,7 +6,20 @@ class FileHandler
 {
     protected $cachedContent;
 
+    protected ?string $encoding = null;
+
     public function __construct(protected string $filePath) {}
+
+    /**
+     * Convert the file from this encoding to UTF-8 while reading, for example
+     * 'Windows-1252' for a German Excel export.
+     */
+    public function encoding(?string $encoding): static
+    {
+        $this->encoding = $encoding;
+
+        return $this;
+    }
 
     /**
      * Open the file and return a stream resource
@@ -17,7 +30,14 @@ class FileHandler
     {
         $handle = str_starts_with($this->filePath, 'http') ? $this->handleFromUrl() : $this->handleFromPath();
 
-        return $this->skipBom($handle);
+        // BOM first, on the raw bytes, so the filter never sees a rewind
+        $handle = $this->skipBom($handle);
+
+        if ($this->encoding !== null) {
+            stream_filter_append($handle, "convert.iconv.{$this->encoding}/UTF-8");
+        }
+
+        return $handle;
     }
 
     /**

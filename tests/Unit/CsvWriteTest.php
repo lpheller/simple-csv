@@ -239,6 +239,26 @@ test('It keeps the file permissions when inserting', function () {
     expect(fileperms($this->file) & 0777)->toBe(0640);
 })->skipOnWindows('Windows has no POSIX permission bits.');
 
+test('It writes a UTF-8 BOM for Excel', function () {
+
+    Csv::make([['Müller', 'Köln']])
+        ->withHeaders(['name', 'stadt'])
+        ->bom()
+        ->toFile($this->file)
+        ->write();
+
+    expect(bin2hex(substr(file_get_contents($this->file), 0, 3)))->toBe('efbbbf');
+});
+
+test('A file written with a BOM reads back without it', function () {
+
+    $rows = [['name' => 'Müller', 'stadt' => 'Köln']];
+
+    Csv::make($rows)->withHeaders(['name', 'stadt'])->bom()->crlf()->toFile($this->file)->write();
+
+    expect(Csv::read($this->file)->mapToHeaders()->toArray())->toBe($rows);
+});
+
 test('It throws when no target file was set', function () {
 
     expect(fn () => Csv::make([['Foo']])->write())

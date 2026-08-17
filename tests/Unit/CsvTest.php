@@ -215,6 +215,21 @@ test('mapToHeaders does not overwrite skipRows', function () {
     ]);
 });
 
+test('It converts a non UTF-8 file while reading', function () {
+
+    $file = sys_get_temp_dir().'/simple-csv-'.uniqid().'.csv';
+    file_put_contents($file, mb_convert_encoding("name,stadt\nMüller,Köln\n", 'Windows-1252', 'UTF-8'));
+
+    $csv = Csv::read($file)->encoding('Windows-1252')->mapToHeaders();
+
+    expect($csv->toArray())->toBe([['name' => 'Müller', 'stadt' => 'Köln']]);
+
+    // the whole point: without the conversion this throws on malformed UTF-8
+    expect($csv->toJson())->toBe('[{"name":"M\u00fcller","stadt":"K\u00f6ln"}]');
+
+    unlink($file);
+});
+
 test('It returns the header row', function () {
 
     $file = __DIR__.'/../Fixtures/data.csv';

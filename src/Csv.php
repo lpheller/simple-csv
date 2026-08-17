@@ -50,6 +50,19 @@ class Csv
     }
 
     /**
+     * Convert the file from this encoding to UTF-8 while reading.
+     *
+     * @param  string  $encoding  Any iconv name, for example 'Windows-1252'
+     * @return $this
+     */
+    public function encoding(string $encoding)
+    {
+        $this->processor->fileHandler->encoding($encoding);
+
+        return $this;
+    }
+
+    /**
      * Map the CSV data to header keys.
      * The header row will be used as the keys for the data rows.
      *
