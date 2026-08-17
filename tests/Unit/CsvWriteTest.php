@@ -237,7 +237,7 @@ test('It keeps the file permissions when inserting', function () {
     Csv::make([['X', 'X']])->toFile($this->file)->insertAt(2);
 
     expect(fileperms($this->file) & 0777)->toBe(0640);
-});
+})->skipOnWindows('Windows has no POSIX permission bits.');
 
 test('It throws when no target file was set', function () {
 
