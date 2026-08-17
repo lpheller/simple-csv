@@ -50,6 +50,20 @@ class Csv
     }
 
     /**
+     * Treat this character as an escape character inside quoted fields. Off by
+     * default, which is RFC 4180. Pass a backslash for files that use one, such
+     * as a MySQL SELECT ... INTO OUTFILE dump.
+     *
+     * @return $this
+     */
+    public function escape(string $escape)
+    {
+        $this->processor->escape = $escape;
+
+        return $this;
+    }
+
+    /**
      * Convert the file from this encoding to UTF-8 while reading.
      *
      * @param  string  $encoding  Any iconv name, for example 'Windows-1252'

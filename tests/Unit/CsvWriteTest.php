@@ -259,6 +259,15 @@ test('A file written with a BOM reads back without it', function () {
     expect(Csv::read($this->file)->mapToHeaders()->toArray())->toBe($rows);
 });
 
+test('A value containing backslashes and quotes survives a round trip', function () {
+
+    $rows = [['pfad' => 'C:\daten\\', 'text' => 'say "hi"']];
+
+    Csv::make($rows)->withHeaders(['pfad', 'text'])->toFile($this->file)->write();
+
+    expect(Csv::read($this->file)->mapToHeaders()->toArray())->toBe($rows);
+});
+
 test('It throws when no target file was set', function () {
 
     expect(fn () => Csv::make([['Foo']])->write())

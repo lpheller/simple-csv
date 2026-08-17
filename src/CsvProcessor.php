@@ -23,6 +23,13 @@ class CsvProcessor
 
     public string $delimiter = ',';
 
+    /**
+     * RFC 4180 has no escape character, a quote is doubled instead. PHP's
+     * historic default is a backslash, which makes a field ending in one
+     * swallow its closing quote.
+     */
+    public string $escape = '';
+
     public bool $skipEmptyRows = false;
 
     public array $headers = [];
@@ -39,7 +46,7 @@ class CsvProcessor
 
         $rowNumber = 0;
 
-        while (($row = fgetcsv($handle, null, $this->delimiter, escape: '\\')) !== false) {
+        while (($row = fgetcsv($handle, null, $this->delimiter, escape: $this->escape)) !== false) {
             $rowNumber++;
 
             if (in_array($rowNumber, $this->skipRows)) {
@@ -148,7 +155,7 @@ class CsvProcessor
 
         // Skip rows until the header row
         for ($i = 1; $i < $this->headerRow; $i++) {
-            if (fgetcsv($handle, escape: '\\') === false) {
+            if (fgetcsv($handle, escape: $this->escape) === false) {
                 throw new \RuntimeException('Header row not found in CSV.');
             }
         }
@@ -157,7 +164,7 @@ class CsvProcessor
             $handle,
             null,
             $this->delimiter,
-            escape: '\\'
+            escape: $this->escape
         );
         fclose($handle);
 

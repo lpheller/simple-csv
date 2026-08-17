@@ -230,6 +230,29 @@ test('It converts a non UTF-8 file while reading', function () {
     unlink($file);
 });
 
+test('It reads a field that ends in a backslash', function () {
+
+    $file = sys_get_temp_dir().'/simple-csv-'.uniqid().'.csv';
+    file_put_contents($file, "pfad,name\n\"C:\\daten\\\",Ada\n");
+
+    expect(Csv::read($file)->mapToHeaders()->first())
+        ->toBe(['pfad' => 'C:\daten\\', 'name' => 'Ada']);
+
+    unlink($file);
+});
+
+test('It can still read backslash escaped files', function () {
+
+    $file = sys_get_temp_dir().'/simple-csv-'.uniqid().'.csv';
+    // a MySQL "SELECT ... INTO OUTFILE" style dump, where \" is an escaped quote
+    file_put_contents($file, "text,name\n\"say \\\"hi\\\"\",Ada\n");
+
+    expect(Csv::read($file)->escape('\\')->mapToHeaders()->first())
+        ->toBe(['text' => 'say \"hi\"', 'name' => 'Ada']);
+
+    unlink($file);
+});
+
 test('It returns the header row', function () {
 
     $file = __DIR__.'/../Fixtures/data.csv';
