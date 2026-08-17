@@ -37,6 +37,19 @@ result, so a typo in a filename cannot look like an empty import.
 Csv::read('data.csv')->delimiter(';')->toArray();
 ```
 
+### Encoding
+
+Files that are not UTF-8 are converted while reading. Anything `iconv` knows
+works as a name, `Windows-1252` covers most Excel exports:
+
+```php
+Csv::read('export.csv')->encoding('Windows-1252')->toArray();
+```
+
+The conversion runs as a stream filter, so it costs nothing per row. Without
+it, non-ASCII characters come back as invalid UTF-8 and anything downstream
+that expects valid UTF-8 — `toJson()`, a database write — fails on them.
+
 ## Header mapping
 
 `mapToHeaders()` uses a row of the CSV as the keys for every data row. The
@@ -252,18 +265,22 @@ scratch, like `write()`.
 Csv::make($rows)->delimiter(';')->toFile('out.csv')->write();
 ```
 
-Rows end with `\n`. Excel on Windows expects `\r\n`:
+Rows end with `\n`. Excel on Windows expects `\r\n`, and needs a UTF-8 BOM to
+read anything outside ASCII correctly:
 
 ```php
-Csv::make($rows)->crlf()->toFile('out.csv')->write();
+Csv::make($rows)->delimiter(';')->crlf()->bom()->toFile('export.csv')->write();
 ```
+
+`bom()` only applies to `write()`. `append()` and `insertAt()` leave a file
+that already has content alone.
 
 ## Known limitations
 
 - Backslash still acts as an escape character inside quoted fields, matching
   PHP's current `fgetcsv` default. A field ending in `\` can swallow its
   closing quote.
-- No encoding conversion. Input is expected to be UTF-8, and no BOM is written.
+- Output is always UTF-8. Only reading converts between encodings.
 - Existing records can be inserted in front of, but not changed or removed.
 
 ## Development

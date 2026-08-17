@@ -12,6 +12,8 @@ class CsvWriter
 
     protected string $lineEnding = "\n";
 
+    protected bool $bom = false;
+
     public function __construct(protected array $data) {}
 
     /**
@@ -53,11 +55,28 @@ class CsvWriter
     }
 
     /**
+     * Start the file with a UTF-8 BOM. Without it Excel reads the file as the
+     * local ANSI codepage and mangles anything outside ASCII.
+     *
+     * Ignored by append() and insertAt() on a file that already has content.
+     */
+    public function bom(): static
+    {
+        $this->bom = true;
+
+        return $this;
+    }
+
+    /**
      * Write the data, replacing whatever is in the file.
      */
     public function write(): static
     {
         $handle = $this->openTarget('w');
+
+        if ($this->bom) {
+            fwrite($handle, "\xEF\xBB\xBF");
+        }
 
         $this->putRows($handle, $this->headers, $this->headers);
 
