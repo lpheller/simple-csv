@@ -3,7 +3,8 @@
 use Heller\SimpleCsv\Csv;
 
 beforeEach(function () {
-    $this->file = tempnam(sys_get_temp_dir(), 'simple-csv-write').'.csv';
+    // a unique path, deliberately not an existing file
+    $this->file = sys_get_temp_dir().'/simple-csv-'.uniqid().'.csv';
 });
 
 afterEach(function () {
@@ -154,6 +155,88 @@ test('It still reads back what it wrote with CRLF', function () {
     Csv::make($rows)->withHeaders(['name', 'city'])->crlf()->toFile($this->file)->write();
 
     expect(Csv::read($this->file)->mapToHeaders()->toArray())->toBe($rows);
+});
+
+test('It inserts rows at a position', function () {
+
+    file_put_contents($this->file, "Col1,Col2\nA,A\nB,B\n");
+
+    Csv::make([['NEW', 'NEW']])->toFile($this->file)->insertAt(3);
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\nA,A\nNEW,NEW\nB,B\n");
+});
+
+test('It inserts several rows at once', function () {
+
+    file_put_contents($this->file, "Col1,Col2\nA,A\n");
+
+    Csv::make([['X', 'X'], ['Y', 'Y']])->toFile($this->file)->insertAt(2);
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\nX,X\nY,Y\nA,A\n");
+});
+
+test('It aligns inserted associative rows to the header in the file', function () {
+
+    file_put_contents($this->file, "Col1,Col2,Col3\nA,A,A\n");
+
+    Csv::make([['Col3' => 'C', 'Col1' => 'A']])->toFile($this->file)->insertAt(2);
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2,Col3\nA,,C\nA,A,A\n");
+});
+
+test('It counts records, not lines, when a field contains a newline', function () {
+
+    file_put_contents($this->file, "id,text\n1,\"line A\nline B\"\n2,ok\n");
+
+    // record 2 is the quoted multi-line one, so this lands in front of record 3
+    Csv::make([['3', 'inserted']])->toFile($this->file)->insertAt(3);
+
+    expect(file_get_contents($this->file))
+        ->toBe("id,text\n1,\"line A\nline B\"\n3,inserted\n2,ok\n");
+});
+
+test('It leaves the records after the insert untouched', function () {
+
+    file_put_contents($this->file, "id,text\n1,\"keeps  its  spacing\"\n2,\"and, its, quotes\"\n");
+
+    Csv::make([['0', 'first']])->toFile($this->file)->insertAt(2);
+
+    expect(file_get_contents($this->file))
+        ->toBe("id,text\n0,first\n1,\"keeps  its  spacing\"\n2,\"and, its, quotes\"\n");
+});
+
+test('It appends when the position is past the end of the file', function () {
+
+    file_put_contents($this->file, "Col1,Col2\nA,A\n");
+
+    Csv::make([['Z', 'Z']])->toFile($this->file)->insertAt(99);
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\nA,A\nZ,Z\n");
+});
+
+test('It writes the file when inserting into a missing one', function () {
+
+    Csv::make([['A', 'B']])->withHeaders(['Col1', 'Col2'])->toFile($this->file)->insertAt(5);
+
+    expect(file_get_contents($this->file))->toBe("Col1,Col2\nA,B\n");
+});
+
+test('It throws on a position below 1', function () {
+
+    file_put_contents($this->file, "Col1,Col2\nA,A\n");
+
+    expect(fn () => Csv::make([['X', 'X']])->toFile($this->file)->insertAt(0))
+        ->toThrow(RuntimeException::class, 'Position must be 1 or higher.');
+});
+
+test('It keeps the file permissions when inserting', function () {
+
+    file_put_contents($this->file, "Col1,Col2\nA,A\n");
+    chmod($this->file, 0640);
+
+    Csv::make([['X', 'X']])->toFile($this->file)->insertAt(2);
+
+    expect(fileperms($this->file) & 0777)->toBe(0640);
 });
 
 test('It throws when no target file was set', function () {
