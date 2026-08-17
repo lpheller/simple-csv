@@ -27,6 +27,16 @@ class Csv
     }
 
     /**
+     * Start writing rows to a CSV file.
+     *
+     * @param  array  $data  Rows as arrays or objects
+     */
+    public static function make(array $data): CsvWriter
+    {
+        return new CsvWriter($data);
+    }
+
+    /**
      * Set the delimiter for the CSV file.
      *
      * @param  string  $delimiter  The delimiter for the CSV file

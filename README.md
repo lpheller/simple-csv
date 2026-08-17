@@ -170,13 +170,68 @@ Csv::read('data.csv')
     });
 ```
 
+## Writing
+
+```php
+Csv::make($rows)->toFile('out.csv')->write();
+```
+
+`write()` replaces the file. Pass header names to get them as the first row:
+
+```php
+Csv::make([['Ada', 'Berlin']])
+    ->withHeaders(['name', 'city'])
+    ->toFile('out.csv')
+    ->write();
+
+// name,city
+// Ada,Berlin
+```
+
+Associative rows are put into header order regardless of the order of their
+keys, and a column a row does not carry is written empty:
+
+```php
+Csv::make([['city' => 'Berlin', 'name' => 'Ada'], ['name' => 'Bob']])
+    ->withHeaders(['name', 'city'])
+    ->toFile('out.csv')
+    ->write();
+
+// name,city
+// Ada,Berlin
+// Bob,
+```
+
+Objects are written by their public properties, so anything read with
+`mapToObject()` can be written straight back out.
+
+### Appending
+
+`append()` keeps the existing contents and does not repeat the header row. When
+no headers are set, the header already in the file defines the column order:
+
+```php
+Csv::make([['city' => 'Hamburg', 'name' => 'Bob']])
+    ->toFile('out.csv')
+    ->append();
+```
+
+If the file is missing or empty, `append()` writes it like `write()` would,
+header included.
+
+### Delimiter
+
+```php
+Csv::make($rows)->delimiter(';')->toFile('out.csv')->write();
+```
+
 ## Known limitations
 
 - Backslash still acts as an escape character inside quoted fields, matching
   PHP's current `fgetcsv` default. A field ending in `\` can swallow its
   closing quote.
-- Reading only. There is no CSV writer.
-- No encoding conversion. Input is expected to be UTF-8.
+- No encoding conversion. Input is expected to be UTF-8, and no BOM is written.
+- Writing replaces or appends. There is no insert or update of existing rows.
 
 ## Development
 
